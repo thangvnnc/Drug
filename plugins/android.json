@@ -1,0 +1,25 @@
+{
+  "prepare_queue": {
+    "installed": [],
+    "uninstalled": []
+  },
+  "config_munge": {
+    "files": {}
+  },
+  "installed_plugins": {
+    "cordova-plugin-whitelist": {
+      "PACKAGE_NAME": "com.thangvnnc.drugdictionary"
+    },
+    "cordova-sqlite-storage": {
+      "PACKAGE_NAME": "com.thangvnnc.drugdictionary"
+    },
+    "cordova-plugin-device": {
+      "PACKAGE_NAME": "com.thangvnnc.drugdictionary"
+    },
+    "cordova-plugin-localization-strings": {
+      "TRANSLATION_PATH": "translations/app/",
+      "PACKAGE_NAME": "com.thangvnnc.drugdictionary"
+    }
+  },
+  "dependent_plugins": {}
+}
