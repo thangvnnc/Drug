@@ -9,7 +9,7 @@ module.exports = {
                 db.run("DROP TABLE IF EXISTS drug_group;");
                 db.run("DROP TABLE IF EXISTS drug_type;");
                 db.run("CREATE TABLE IF NOT EXISTS drug_group (idx INTEGER PRIMARY KEY, name TEXT NOT NULL, created_at DATE, updated_at DATE)");
-                db.run("CREATE TABLE IF NOT EXISTS drug_type (idx INTEGER PRIMARY KEY, name TEXT NOT NULL, created_at DATE, updated_at DATE)");
+                db.run("CREATE TABLE IF NOT EXISTS drug_type (idx INTEGER PRIMARY KEY, id_group INTEGER NOT NULL, name TEXT NOT NULL, created_at DATE, updated_at DATE)");
                 console.log(db.curentMilis + ": Created tables database");
                 resolve();
             });
@@ -30,7 +30,7 @@ module.exports = {
     // Tạo dữ liệu table drug_groups
     insertDrugGroups: function(drugGroupNames) {
         return new Promise((resolve) => {
-            this.connect().then(db => {
+            this.connect().then((db) => {
                 let mapInsertDrugGroups = [];
                 let stmt = db.prepare("INSERT INTO drug_group (idx, name, created_at, updated_at) VALUES (?, ?, ?, ?)");
                 for (let idx = 0; idx < drugGroupNames.length; idx++) {
@@ -49,10 +49,31 @@ module.exports = {
         });
     },
 
-    // Tạo dữ liệu drug_types
-    insertDrugTypes: async function(drugGroupName, drugTypes) {
-
+    insertDrugTypes: function (idxGroup, drugTypes) {
+        return new Promise((resolve) => {
+            this.connect().then((db) => {
+                let stmt = db.prepare("INSERT INTO drug_type (idx, id_group, name, created_at, updated_at) VALUES (?, ?, ?, ?, ?)");
+                for (let idx = 0; idx < drugTypes.length; idx++) {
+                    let now = new Date();
+                    let drugTypeName = drugTypes[idx];
+                    let idxDatabase = now.getTime() + idx;
+                    stmt.run(idxDatabase, idxGroup, drugTypeName, now, now);
+                }
+                stmt.finalize();
+                console.log(db.curentMilis + ": Insert database drug_types");
+                this.close(db).then(()=>{
+                    resolve();
+                });
+            });
+        });
     },
+
+    insertDrugTypesFromMap: async function(mapInsertDrugGroups, drugTypesMapDrugGroups) {
+        for (let key in drugTypesMapDrugGroups) {
+            await this.insertDrugTypes(mapInsertDrugGroups[key], drugTypesMapDrugGroups[key]);
+        }
+    },
+
 
     // Kết nối db
     connect: function(fileSql) {
