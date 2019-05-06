@@ -3,7 +3,7 @@ const cheerio = require('cheerio');
 const sqlite = require('./src/db/sqlite');
 sqlite.initCreateTable();
 
-dom('https://vicare.vn/thuoc/', function (error, response, body) {
+dom('https://vicare.vn/thuoc/', async function (error, response, body) {
     if(error !== null) {
         console.error('error:', error);
     }
@@ -26,18 +26,17 @@ dom('https://vicare.vn/thuoc/', function (error, response, body) {
         }
         drugTypesMapDrugGroups[drugGroupName] = drugTypes;
     }
-    insertDrugGroups(drugGroupNames);
-    insertDrugTypesMapDrugGroups(drugTypesMapDrugGroups);
+
+     let mapInsertDrugGroups = await sqlite.insertDrugGroups(drugGroupNames);
+    console.log(mapInsertDrugGroups);
+
+    // insertDrugTypesMapDrugGroups(drugTypesMapDrugGroups);
 });
 
-function insertDrugGroups(drugGroupNames) {
-    sqlite.insertDrugGroups(drugGroupNames);
-}
-
-function insertDrugTypesMapDrugGroups(drugTypesMapDrugGroups) {
-    Object.keys(drugTypesMapDrugGroups).map(function(key, value) {
-        let drugGroup = key;
-        let drugTypes = drugTypesMapDrugGroups[key];
-        sqlite.insertDrugTypes(drugGroupName, drugTypes);
-    });
-}
+// function insertDrugTypesMapDrugGroups(drugTypesMapDrugGroups) {
+//     Object.keys(drugTypesMapDrugGroups).map(function(key, value) {
+//         let drugGroup = key;
+//         let drugTypes = drugTypesMapDrugGroups[key];
+//         sqlite.insertDrugTypes(drugGroupName, drugTypes);
+//     });
+// }
