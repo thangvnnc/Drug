@@ -8,8 +8,10 @@ module.exports = {
             db.serialize(function () {
                 db.run("DROP TABLE IF EXISTS drug_group;");
                 db.run("DROP TABLE IF EXISTS drug_type;");
+                db.run("DROP TABLE IF EXISTS drug_info;");
                 db.run("CREATE TABLE IF NOT EXISTS drug_group (idx INTEGER PRIMARY KEY, name TEXT NOT NULL, created_at DATE, updated_at DATE)");
                 db.run("CREATE TABLE IF NOT EXISTS drug_type (idx INTEGER PRIMARY KEY, id_group INTEGER NOT NULL, name TEXT NOT NULL, created_at DATE, updated_at DATE)");
+                db.run("CREATE TABLE IF NOT EXISTS drug_info (idx INTEGER PRIMARY KEY, id_type INTEGER NOT NULL, name TEXT NOT NULL, more TEXT, created_at DATE, updated_at DATE)");
                 console.log(db.curentMilis + ": Created tables database");
                 resolve();
             });
@@ -52,29 +54,32 @@ module.exports = {
     insertDrugTypes: function (idxGroup, drugTypes) {
         return new Promise((resolve) => {
             this.connect().then((db) => {
+                let drugTypeNames = [];
                 let stmt = db.prepare("INSERT INTO drug_type (idx, id_group, name, created_at, updated_at) VALUES (?, ?, ?, ?, ?)");
                 for (let idx = 0; idx < drugTypes.length; idx++) {
                     let now = new Date();
                     let drugTypeName = drugTypes[idx];
                     let idxDatabase = now.getTime() + idx;
+                    drugTypeNames.push(drugTypeName);
                     stmt.run(idxDatabase, idxGroup, drugTypeName, now, now);
                 }
                 stmt.finalize();
                 console.log(db.curentMilis + ": Insert database drug_types");
                 this.close(db).then(()=>{
-                    resolve();
+                    resolve(drugTypeNames);
                 });
             });
         });
     },
 
     insertDrugTypesFromMap: async function(mapInsertDrugGroups, drugTypesMapDrugGroups) {
+        let drugTypeNames = [];
         for (let key in drugTypesMapDrugGroups) {
-            await this.insertDrugTypes(mapInsertDrugGroups[key], drugTypesMapDrugGroups[key]);
+            let drugTypeNameData = await this.insertDrugTypes(mapInsertDrugGroups[key], drugTypesMapDrugGroups[key]);
+            drugTypeNames.push(drugTypeNameData);
         }
+        return drugTypeNames;
     },
-
-
     // Kết nối db
     connect: function(fileSql) {
         return new Promise((resolve, reject) => {
