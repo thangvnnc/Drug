@@ -9,9 +9,11 @@ module.exports = {
                 db.run("DROP TABLE IF EXISTS drug_group;");
                 db.run("DROP TABLE IF EXISTS drug_type;");
                 db.run("DROP TABLE IF EXISTS drug_info;");
+                db.run("DROP TABLE IF EXISTS drug_substance;");
                 db.run("CREATE TABLE IF NOT EXISTS drug_group (idx INTEGER PRIMARY KEY, name TEXT NOT NULL, created_at DATE, updated_at DATE)");
                 db.run("CREATE TABLE IF NOT EXISTS drug_type (idx INTEGER PRIMARY KEY, id_group INTEGER NOT NULL, name TEXT NOT NULL, created_at DATE, updated_at DATE)");
-                db.run("CREATE TABLE IF NOT EXISTS drug_info (idx INTEGER PRIMARY KEY, id_type INTEGER NOT NULL, name TEXT NOT NULL, more TEXT, created_at DATE, updated_at DATE)");
+                db.run("CREATE TABLE IF NOT EXISTS drug_info (idx INTEGER PRIMARY KEY, id_type INTEGER NOT NULL, name TEXT NOT NULL, more TEXT, link TEXT, created_at DATE, updated_at DATE)");
+                db.run("CREATE TABLE IF NOT EXISTS drug_substance (idx INTEGER PRIMARY KEY, id_type INTEGER NOT NULL, name TEXT NOT NULL, more TEXT, link TEXT, created_at DATE, updated_at DATE)");
                 console.log(db.curentMilis + ": Created tables database");
                 resolve();
             });
@@ -80,6 +82,79 @@ module.exports = {
         }
         return drugTypeNames;
     },
+
+    getIdTypeFromName: function(drugTypeName) {
+        return new Promise(resolve => {
+            this.connect().then((db) => {
+                db.all('SELECT * FROM drug_type WHERE name = ?',[drugTypeName],(err, rows ) => {
+                    if(err) {
+                        console.error(err);
+                        resolve();
+                        return;
+                    }
+
+                    if (rows.length <= 0) {
+                        console.log("Không tìm thấy drugtype");
+                        resolve();
+                        return;
+                    }
+
+                    if (rows.length > 1) {
+                        console.log("Tên drugtype bị trùng lập drugtype");
+                        resolve();
+                        return;
+                    }
+                    resolve(rows[0].idx);
+                    return;
+                });
+            });
+        });
+    },
+
+    // Tạo dữ liệu table drug_info
+    insertDrugInfos: function(idType, drugInfos) {
+        return new Promise((resolve) => {
+            this.connect().then((db) => {
+                let stmt = db.prepare("INSERT INTO drug_info (idx, id_type, name, more, link, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)");
+                for (let idx = 0; idx < drugInfos.length; idx++) {
+                    let now = new Date();
+                    let name = drugInfos[idx].name;
+                    let more = drugInfos[idx].more;
+                    let link = drugInfos[idx].link;
+                    let idType = drugInfos[idx].idType;
+                    let idxDatabase = now.getTime() + idx;
+                    stmt.run(idxDatabase, idType, name, more, link, now, now);
+                }
+                stmt.finalize();
+                this.close(db).then(()=>{
+                    resolve();
+                });
+            });
+        });
+    },
+
+    // Tạo dữ liệu table drug_info
+    insertDrugSubstances: function(idType, drugSubstances) {
+        return new Promise((resolve) => {
+            this.connect().then((db) => {
+                let stmt = db.prepare("INSERT INTO drug_substance (idx, id_type, name, more, link, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)");
+                for (let idx = 0; idx < drugSubstances.length; idx++) {
+                    let now = new Date();
+                    let name = drugSubstances[idx].name;
+                    let more = drugSubstances[idx].more;
+                    let link = drugSubstances[idx].link;
+                    let idType = drugSubstances[idx].idType;
+                    let idxDatabase = now.getTime() + idx;
+                    stmt.run(idxDatabase, idType, name, more, link, now, now);
+                }
+                stmt.finalize();
+                this.close(db).then(()=>{
+                    resolve();
+                });
+            });
+        });
+    },
+
     // Kết nối db
     connect: function(fileSql) {
         return new Promise((resolve, reject) => {

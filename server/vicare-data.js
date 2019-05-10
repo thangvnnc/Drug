@@ -62,14 +62,43 @@ function insertDrugGroupDrugType() {
 async function insertDrugInfoFromLink(drugTypeMapLinks) {
     for (let key in drugTypeMapLinks) {
         let link = drugTypeMapLinks[key];
-        let totalPage = await getTotalPageDrugInfos(link);
-        for (let pageIdx = 1; pageIdx <= totalPage; pageIdx++) {
+
+        let totalPageInfos = await getTotalPageDrugInfos(link);
+        for (let pageIdx = 1; pageIdx <= totalPageInfos; pageIdx++) {
             await insertDrugInfos(key, link, pageIdx);
+        }
+
+        let totalPageSubtances = await getTotalPageDrugSubtances(link);
+        for (let pageIdx = 1; pageIdx <= totalPageSubtances; pageIdx++) {
+            await insertDrugSubstances(key, link, pageIdx);
         }
     }
 }
 
 function getTotalPageDrugInfos(drugTypeLink) {
+    return new Promise(resolve => {
+        dom(domainVicare + drugTypeLink, async function (error, response, body) {
+            if (error !== null) {
+                console.error('error:', error);
+            }
+            const $ = cheerio.load(body);
+
+            let stepLinks = $('.step-links');
+            if (stepLinks.length === 0) {
+                resolve(1);
+                return;
+            }
+            if (stepLinks !== "") {
+                let textNumPage = $('.step-links').find('.current').text().trim();
+                let totalPage = parseInt(textNumPage.split('/')[1].trim());
+                resolve(totalPage);
+            }
+        });
+    });
+}
+
+function getTotalPageDrugSubtances(drugTypeLink) {
+    drugTypeLink = drugTypeLink.replace("/danh-sach/", "/duoc-chat/");
     return new Promise(resolve => {
         dom(domainVicare + drugTypeLink, async function (error, response, body) {
             if (error !== null) {
@@ -97,7 +126,73 @@ function insertDrugInfos(drugTypeName, drugTypeLink, page) {
         pageLink = "&page=" + page;
         console.log("Get Drug info from drugTypeName: " + drugTypeName + " page : " + page);
         dom(domainVicare + drugTypeLink + pageLink, async function (error, response, body) {
+            if (error !== null) {
+                console.error('error:', error);
+            }
+            const $ = cheerio.load(body);
+            let items = $('.o-masonry').find('.item');
+            if (items.length < 0) {
+                resolve();
+                return;
+            }
+
+            let idType = await sqlite.getIdTypeFromName(drugTypeName);
+            let drugInfos = [];
+            for (let i = 0; i < items.length; i++) {
+                let item = items[i];
+                let link = $(item).find('.c-media').attr('href');
+                let name = $(item).find('.c-media__title').text().trim();
+                let more = $(item).find('.c-media__content').text().trim();
+
+                let drugInfo = {
+                    name: name,
+                    more: more,
+                    link: link,
+                    idType: idType
+                };
+                drugInfos.push(drugInfo);
+            }
+            await sqlite.insertDrugInfos(idType, drugInfos);
             resolve();
         });
-    })
+    });
+}
+
+function insertDrugSubstances(drugTypeName, drugTypeLink, page) {
+    return new Promise(resolve => {
+        let pageLink = "&page=";
+        pageLink = "&page=" + page;
+        console.log("Get Drug substances from drugTypeName: " + drugTypeName + " page : " + page);
+        drugTypeLink = drugTypeLink.replace("/danh-sach/", "/duoc-chat/");
+        dom(domainVicare + drugTypeLink + pageLink, async function (error, response, body) {
+            if (error !== null) {
+                console.error('error:', error);
+            }
+            const $ = cheerio.load(body);
+            let items = $('.o-masonry').find('.item');
+            if (items.length < 0) {
+                resolve();
+                return;
+            }
+
+            let idType = await sqlite.getIdTypeFromName(drugTypeName);
+            let drugInfos = [];
+            for (let i = 0; i < items.length; i++) {
+                let item = items[i];
+                let link = $(item).find('.c-media').attr('href');
+                let name = $(item).find('.c-media__title').text().trim();
+                let more = $(item).find('.c-media__content').text().trim();
+
+                let drugInfo = {
+                    name: name,
+                    more: more,
+                    link: link,
+                    idType: idType
+                };
+                drugInfos.push(drugInfo);
+            }
+            await sqlite.insertDrugSubstances(idType, drugInfos);
+            resolve();
+        });
+    });
 }
