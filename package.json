@@ -18,7 +18,7 @@
         "cordova-plugin-device": "^2.0.2",
         "cordova-plugin-localization-strings": "3.1.0",
         "cordova-sqlite-storage": "3.2.0",
-        "jquery": "^3.4.1",
+        "jquery": "^3.5.0",
         "path": "^0.12.7",
         "webpack": "^4.30.0"
     },
